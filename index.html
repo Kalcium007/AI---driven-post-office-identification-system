@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Web Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        video, canvas {
+            border: 1px solid #ccc;
+            margin: 10px 0;
+        }
+        #captureButton, #extractButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        #output {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>OCR Model Web Interface</h1>
+    <video id="webcam" autoplay></video>
+    <canvas id="snapshot" width="640" height="480" style="display:none;"></canvas>
+    <div>
+        <button id="captureButton">Capture Image</button>
+    </div>
+    <div id="output">Extracted Text: <span id="textResult"></span></div>
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('snapshot');
+        const captureButton = document.getElementById('captureButton');
+        const output = document.getElementById('textResult');
+
+        // Access the webcam stream
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { console.error("Webcam access denied:", err); });
+
+        // Capture the image and send it for OCR processing
+        captureButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/png');
+
+            fetch('/process-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => { output.textContent = data.text || "No text detected."; })
+            .catch(err => { console.error("OCR processing error:", err); });
+        });
+    </script>
+</body>
+</html>
